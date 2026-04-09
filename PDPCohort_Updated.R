@@ -20,18 +20,19 @@ library(stringr)
 cohortfile <- SLR202530 %>%
   distinct(id_num, .keep_all = TRUE) %>%
   filter(major_1!="DC") %>%
-  left_join(gateway, by="major_1") %>%
-  rename("Student ID" = "id_num",
-         "City" = "city",
-         "State" = "state", 
-         "Zip/Postal Code" = "zip", 
-         "Date of Birth" = "formatted_dob",
-         "First Gen" = "firstgen", 
+  rename("Student ID" = id_num,
+         "City" = city,
+         "State" = state, 
+         "Zip/Postal Code" = zip, 
+         "Date of Birth" = formatted_dob,
+         "First Gen" = firstgen, 
          "Math Placement" = "math_placement2", 
          "English Placement" = "english_placement2", 
-         "Enrollment Type" = "enrolltype",
-         "Ethnicity" = "ethnicity", 
-         "Race" = "race") %>%
+         "Enrollment Type" = enrolltype,
+         "Ethnicity" = ethnicity, 
+         "Race" = race, 
+         "Gateway Math Status" = gateway_math_status, 
+         "Gateway English Status" = gateway_english_status) %>%
   replace(is.na(.), "") %>% 
   mutate(CH1 = ("D1"),
          Cohort = ("2025-26"),  #!!!!UPDATE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -59,7 +60,7 @@ cohortfile <- SLR202530 %>%
          'Gateway Math Status', 'Gateway English Status')
 
 ####STEP 2) EXPORT FILE OUT OF R ENVIRONMENT INTO FILE EXPLORER
-writexl::write_xlsx(cohortfile,  "U:/R/PDP/PDPCohortfile202530.xlsx", format_headers = FALSE ) ##change values to how you want the file named 
+writexl::write_xlsx(cohortfile,  "U:/R/PDP/PDPCohortfile202530_test.xlsx", format_headers = FALSE ) ##change values to how you want the file named 
 
 #Instructions after: 
 #compare student IDs to master cohort list and each term to check for duplicates, remove the newest duplicates
