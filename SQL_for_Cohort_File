@@ -134,7 +134,15 @@ SELECT DISTINCT
 			WHEN bm.udef_1a_1 = 'Y' THEN 'N'
 			WHEN bm.udef_1a_1 = 'N' THEN 'B'
 		END AS FirstGen, 
-		Math_Placement2, English_Placement2
+		Math_Placement2, English_Placement2,
+		CASE 
+			WHEN stsd.MAJOR_1 in ('ADS', 'AGR', 'ARTG', 'AUT', 'AUTDL', 'BAD', 'BADOL', 'BSBAD', 'BSBAO', 'BSCJU', 'BSCJO', 'BSEDU', 'BSESR', 'CIS', 'CIT', 'CJAAO', 'CJU', 'EDU', 'ENR', 'ENVR', 'ESR', 'FWAS', 'FWBS', 'GENA', 'GENO', 'GENOL', 'HPR', 'HSS', 'IFA', 'INDL', 'PAR', 'SWK', 'SWKAS') THEN 'R'
+			WHEN stsd.MAJOR_1 in ('CVO', 'CVOC', 'DC', 'HEOC', 'NON', 'WLD') THEN 'N'
+		END AS gateway_english_status,
+		CASE
+			WHEN stsd.MAJOR_1 in ('ADS', 'AGR', 'ARTG', 'AUT', 'AUTDL', 'BAD', 'BADOL', 'BSBAD', 'BSBAO', 'BSCJO', 'BSCJU', 'BSEDU', 'BSESR', 'CIS', 'CIT', 'CJAAO', 'CJU', 'EDU', 'ENR', 'ENVR', 'ESR', 'FWAS', 'FWBS', 'GENA', 'GENO', 'GENOL', 'HEOC', 'HPR', 'HSS', 'IFA', 'INDL', 'PAR', 'SWK', 'SWKAS', 'WLD') THEN 'R'
+			WHEN stsd.MAJOR_1 IN ('CVO', 'CVOC', 'DC', 'NON') THEN 'N'
+		END AS gateway_math_status
 
     FROM TmsEPrd.dbo.stud_term_sum_div stsd  
          LEFT JOIN TmsEPrd.dbo.name_master nm ON stsd.ID_NUM = nm.ID_NUM   
