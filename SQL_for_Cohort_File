@@ -1,84 +1,65 @@
- WITH ACTEnglish AS(
-SELECT hts.IDNumber AS ID_NUM, hts.TestElementCode, hts.TestScore, hts.DateTaken,
-CASE
-	WHEN hts.TestScore<=17 THEN 1	
-	WHEN hts.TestScore>=18 THEN 2
-	WHEN hts.TestScore is null THEN 0
-	END AS score_cat_english1
+ --THIS SECTION CREATES A SCORE VALUE FOR EACH TEST TYPE.
+WITH SCORES AS( 
+SELECT hts.IDNumber AS ID_NUM, hts.TestElementCode, 
+	CASE
+		WHEN hts.TestElementCode='ACTEN'AND hts.TestScore<=17 THEN 1	--ASC 087
+		WHEN hts.TestElementCode='ACTEN'AND hts.TestScore>=18 THEN 2	--ENG 104/110
+		WHEN hts.TestElementCode='ACTEN'AND hts.TestScore is null THEN 0 --test not taken
+		END AS score_act_english1,
+	CASE
+		WHEN hts.TestElementCode='ACTMT' AND hts.TestScore<=12 THEN 1 --ASC090
+		WHEN hts.TestElementCode='ACTMT' AND hts.TestScore>=13 AND hts.TestScore<=15 THEN 2 --ASC091
+		WHEN hts.TestElementCode='ACTMT' AND hts.TestScore>=16 AND hts.TestScore<=18 THEN 3 --MTH101
+		WHEN hts.TestElementCode='ACTMT' AND hts.TestScore>=19 AND hts.TestScore<=20 THEN 4 --MTH102
+		WHEN hts.TestElementCode='ACTMT' AND hts.TestScore>=21 THEN 5 --MTH103/104/210
+		WHEN hts.TestElementCode='ACTMT' AND hts.TestScore is null THEN 0 --test not taken
+		END AS score_act_math1,
+	CASE
+		WHEN hts.TestElementCode='ARITX' and hts.TestScore <=224 THEN 1 --ASC090
+		WHEN hts.TestElementCode='ARITX' and hts.TestScore>=225 AND hts.TestScore<=236 THEN 2 --ASC091
+		WHEN hts.TestElementCode='ARITX' and hts.TestScore>=237 AND hts.TestScore<=245 THEN 3 --MTH101
+		WHEN hts.TestElementCode='ARITX' and hts.TestScore>=246 AND hts.TestScore<=254 THEN 4 --MTH102
+		WHEN hts.TestElementCode='ARITX' and hts.TestScore>254 THEN 5 --MTH103/104/210
+		WHEN hts.TestElementCode='ARITX' and hts.TestScore is null THEN 0 --TEST NOT TAKEN
+		END AS score_accup_math2,
+	CASE
+		WHEN hts.TestElementCode='WRITX' AND hts.TestScore<=225 THEN 1	--ASC 087
+		WHEN hts.TestElementCode='WRITX' AND hts.TestScore>=226 THEN 2 --ENG 104/110
+		WHEN hts.TestElementCode='WRITX' AND hts.TestScore is null THEN 0 --TEST NOT TAKEN
+		END AS score_accup_english2
 FROM TmsEPrd.dbo.TEST_INFORMATION_V hts
-WHERE hts.TestElementCode='ACTEN' and :YEAR-YEAR(hts.DateTaken)<=5
-),
-ACTMath AS(
-SELECT hts.IDNumber AS ID_NUM, hts.TestElementCode, hts.TestScore, hts.DateTaken,
-CASE
-	WHEN hts.TestScore<=12 THEN 1 --ASC090
-	WHEN hts.TestScore>=13 AND hts.TestScore<=15 THEN 2 --ASC091
-	WHEN hts.TestScore>=16 AND hts.TestScore<=18 THEN 3 --MTH101
-	WHEN hts.TestScore>=19 AND hts.TestScore<=20 THEN 4 --MTH102
-	WHEN hts.TestScore>=21 THEN 5 --MTH103/104/210
-	WHEN hts.TestScore is null THEN 0
-	END AS score_cat_math1
-FROM TmsEPrd.dbo.TEST_INFORMATION_V hts
-WHERE hts.TestElementCode='ACTMT' and :YEAR-YEAR(hts.DateTaken)<=5
-),
-ACCUPMath AS (
-SELECT hts.IDNumber AS ID_NUM, hts.TestElementCode, hts.TestScore, hts.DateTaken,
-CASE
-	WHEN hts.TestScore <=224 THEN 1 --ASC090
-	WHEN hts.TestScore>=225 AND hts.TestScore<=236 THEN 2 --ASC091
-	WHEN hts.TestScore>=237 AND hts.TestScore<=245 THEN 3 --MTH101
-	WHEN hts.TestScore>=246 AND hts.TestScore<=254 THEN 4 --MTH102
-	WHEN hts.TestScore>254 THEN 5 --MTH103/104/210
-	WHEN hts.TestScore is null THEN 0
-	END AS score_cat_math2
-FROM TmsEPrd.dbo.TEST_INFORMATION_V hts
-WHERE hts.TestElementCode='ARITX' and :YEAR-YEAR(hts.DateTaken)<=3
-),
-ACCUPEnglish AS (
-SELECT hts.IDNumber AS ID_NUM, hts.TestElementCode, hts.TestScore, hts.DateTaken,
-CASE
-	WHEN hts.TestScore<=225 THEN 1	
-	WHEN hts.TestScore>=226 THEN 2
-	WHEN hts.TestScore is null THEN 0
-	END AS score_cat_english2
-FROM TmsEPrd.dbo.TEST_INFORMATION_V hts
-WHERE hts.TestElementCode='WRITX' and :YEAR-YEAR(hts.DateTaken)<=3
+WHERE hts.TestElementCode IN ('ACTEN', 'ACTMT','ARITX','WRITX') AND :YEAR-YEAR(hts.DateTaken)<=5
 ),
 
---Removing nulls, adding biograph, and joining all data using the stud_term_sum_div table
+--THIS SECTIONS REMOVES NULLS AND JOINS THE SCORES WITH THE STUD_TERM_SUM_DIV TABLE (SO ONLY CURRENT TERM STUDENT SCORES ARE USED).
 RemovingNulls AS (
-SELECT stsd.ID_NUM, stsd.TRM_CDE, stsd.YR_CDE, bm.GENDER, 
-		CASE
-			WHEN bm.ETHNIC_GROUP = 2 THEN 'Native American'
-			WHEN bm.ETHNIC_GROUP = 9 THEN 'Non-Enrolled Native'
-			WHEN bm.ETHNIC_GROUP in (1, 3, 4, 5, 6) THEN 'Non-Native'
-			ELSE 'Needs filled in for sql'
-		END AS Native_Ethnicity,
-	ACTm.TestScore AS ACTMT_Score, ACCUPm.TestScore AS ARITX_Score, 
-	CASE WHEN ACTm.score_cat_math1 is null THEN 0 ELSE ACTm.score_cat_math1 END AS score_cat_math1,
-	CASE WHEN ACCUPm.score_cat_math2 is null THEN 0 ELSE  ACCUPm.score_cat_math2 END AS score_cat_math2,
-	ACTe.TestScore AS ACTEN_Score, ACCUPe.TestScore AS WRITX_Score,
-	CASE WHEN ACTe.score_cat_english1 is null THEN 0 ELSE  ACTe.score_cat_english1 END AS score_cat_english1,
-	CASE WHEN ACCUPe.score_cat_english2 is null THEN 0 ELSE  ACCUPe.score_cat_english2 END AS score_cat_english2
+SELECT stsd.ID_NUM, stsd.TRM_CDE, stsd.YR_CDE, 
+	CASE WHEN score_act_math1 is null THEN 0 ELSE score_act_math1 END AS score_act_math1,
+	CASE WHEN score_accup_math2 is null THEN 0 ELSE  score_accup_math2 END AS score_accup_math2,
+	CASE WHEN score_act_english1 is null THEN 0 ELSE  score_act_english1 END AS score_act_english1,
+	CASE WHEN score_accup_english2 is null THEN 0 ELSE  score_accup_english2 END AS score_accup_english2
 FROM TmsEPrd.dbo.STUD_TERM_SUM_DIV stsd
-	LEFT JOIN ACTMath ACTm ON stsd.ID_NUM = ACTm.ID_NUM
-	LEFT JOIN ACTEnglish ACTe ON stsd.ID_NUM = ACTe.ID_NUM
-	LEFT JOIN ACCUPMath ACCUPm ON stsd.ID_NUM = ACCUPm.ID_NUM
-	LEFT JOIN ACCUPEnglish ACCUPe ON stsd.ID_NUM = ACCUPe.ID_NUM
-	LEFT JOIN TmsEPrd.dbo.BIOGRAPH_MASTER bm ON stsd.ID_NUM=bm.ID_NUM
+	LEFT JOIN SCORES ON stsd.ID_NUM = SCORES.ID_NUM
 WHERE stsd.HRS_ENROLLED>'0' AND stsd.YR_CDE=:YEAR AND stsd.TRM_CDE=:TERM),
 
 --THIS SECTION IS WHERE THE SCORES ARE COMPARED AND THE HIGHER OF THE SCORES IS USED (act math vs. accuplacer math and the higher of the two used)
 CombiningScores AS(
-SELECT RemovingNulls.ID_NUM, RemovingNulls.trm_cde, RemovingNulls.YR_CDE, RemovingNulls.GENDER, RemovingNulls.Native_Ethnicity,
-	CASE WHEN RemovingNulls.score_cat_math1 >= RemovingNulls.score_cat_math2 THEN RemovingNulls.score_cat_math1
-		ELSE RemovingNulls.score_cat_math2 END AS Math_Placement,
-	CASE WHEN RemovingNulls.score_cat_english1 >= RemovingNulls.score_cat_english2 THEN RemovingNulls.score_cat_english1
-		ELSE RemovingNulls.score_cat_english2 END AS English_Placement
-FROM RemovingNulls), 
+SELECT RemovingNulls.ID_NUM, RemovingNulls.trm_cde, RemovingNulls.YR_CDE, 
+	CASE WHEN RemovingNulls.score_ACT_math1 >= RemovingNulls.score_accup_math2 THEN RemovingNulls.score_act_math1
+		ELSE RemovingNulls.score_accup_math2 END AS Math_Placement,
+	CASE WHEN RemovingNulls.score_act_english1 >= RemovingNulls.score_accup_english2 THEN RemovingNulls.score_act_english1
+		ELSE RemovingNulls.score_accup_english2 END AS English_Placement
+FROM RemovingNulls),
+GroupScores AS (
+SELECT CombiningScores.ID_NUM, CombiningScores.TRM_CDE, CombiningScores.YR_CDE, 
+	MAX(COMBININGSCORES.Math_Placement) AS Math_Placement,
+	MAX(COMBININGSCORES.English_Placement) AS English_Placement
+FROM CombiningScores
+GROUP BY ID_NUM, TRM_CDE, YR_CDE
+),
 --THIS SECTION ASSIGNS THE PLACEMENT VALUES AS THE APPLICABLE PDP VALUE
 PlacementValues AS (
-SELECT cs.ID_NUM, cs.TRM_CDE, cs.YR_CDE, cs.GENDER, cs.Native_Ethnicity,
+SELECT cs.ID_NUM, cs.TRM_CDE, cs.YR_CDE,
 cs.Math_Placement, 
 CASE 
 	WHEN cs.Math_Placement=0 THEN 'UK' --No Testing Completed
@@ -94,27 +75,21 @@ CASE
 	WHEN cs.English_Placement=1 THEN 'N' --ASC  087
 	WHEN cs.English_Placement=2 THEN 'C' --ENG  110/104
 	END AS English_Placement2
-FROM CombiningScores cs
-),
---THIS SECTION CREATES PULLS THE CANDIDACY VALUE FOR THE SPECIFIED TERM
-DistinctCandidacy AS (
-  SELECT cv.ID_NUM, cv.yr_cde, cv.trm_cde, cv.candidacy_type, ctd.candidacy_typ_desc
-    FROM TmsEPrd.dbo.candidacy_v cv, TMSEPrd.dbo.CANDIDACY_TYPE_DEF ctd
-   WHERE ( cv.CANDIDACY_TYPE = ctd.CANDIDACY_TYPE ) AND (( cv.yr_cde = :YEAR ) AND  ( cv.trm_cde = :TERM )) 
-		)
+FROM GroupScores cs
+)
 
 --FINAL QUERY THAT TIES IT ALL TOGETHER-------------------------------------------------------------------
 SELECT DISTINCT 
 	stsd.id_num, stsd.yr_cde, stsd.trm_cde,    
-    bm.ssn, nm.first_name, nm.last_name, 
-         am.addr_line_1, am.ADDR_LINE_2, am.city, am.state, am.zip, 
-		 FORMAT(CAST(bm.birth_dte as date), 'yyyyMMdd') AS formatted_dob,
-		 stsd.major_1, 
+    ssn, first_name, last_name, 
+    addr_line_1, addr_line_2, city, state, zip, 
+	FORMAT(CAST(bm.birth_dte as date), 'yyyyMMdd') AS formatted_dob,
+	stsd.major_1, 
 		 CASE 
-			WHEN dc.CANDIDACY_TYP_DESC='Transfer Student' THEN 'T'
-			WHEN dc.CANDIDACY_TYP_DESC='New Student' THEN 'F'
+			WHEN c.CANDIDACY_TYPE='T' THEN 'T'
+			WHEN c.CANDIDACY_TYPE='N' THEN 'F'
 			ELSE 'WARNING'
-		 END AS EnrollType,
+		 END AS enrolltype,
 		 CASE 
 			WHEN bm.ETHNIC_GROUP = 1 THEN 'B'
 			WHEN bm.ETHNIC_GROUP = 2 THEN 'IA'
@@ -124,33 +99,33 @@ SELECT DISTINCT
 			WHEN bm.ETHNIC_GROUP = 7 THEN 'TM'
 			WHEN bm.ETHNIC_GROUP = 9 THEN 'IA'
 			ELSE 'Needs filled in for sql'
-		END AS Race,
+		END AS race,
 		CASE
 			WHEN ethnic_race_v.ETHNIC_RPT_DESC = 'Not Hispanic/Latino' THEN 'N'
 			WHEN ethnic_race_v.ETHNIC_RPT_DESC = 'Hispanic/Latino' THEN 'H'
 			ELSE 'UK'
-		END AS Ethnicity,
+		END AS ethnicity,
 		CASE
 			WHEN bm.udef_1a_1 = 'Y' THEN 'N'
 			WHEN bm.udef_1a_1 = 'N' THEN 'B'
-		END AS FirstGen, 
-		Math_Placement2, English_Placement2,
+		END AS firstgen, 
+		Math_Placement2 AS math_placement2, English_Placement2 AS english_placement2, 
 		CASE 
 			WHEN stsd.MAJOR_1 in ('ADS', 'AGR', 'ARTG', 'AUT', 'AUTDL', 'BAD', 'BADOL', 'BSBAD', 'BSBAO', 'BSCJU', 'BSCJO', 'BSEDU', 'BSESR', 'CIS', 'CIT', 'CJAAO', 'CJU', 'EDU', 'ENR', 'ENVR', 'ESR', 'FWAS', 'FWBS', 'GENA', 'GENO', 'GENOL', 'HPR', 'HSS', 'IFA', 'INDL', 'PAR', 'SWK', 'SWKAS') THEN 'R'
-			WHEN stsd.MAJOR_1 in ('CVO', 'CVOC', 'DC', 'HEOC', 'NON', 'WLD') THEN 'N'
+			WHEN stsd.MAJOR_1 in ('CVO', 'CVOC', 'HEOC', 'NON', 'WLD') THEN 'N'
 		END AS gateway_english_status,
 		CASE
 			WHEN stsd.MAJOR_1 in ('ADS', 'AGR', 'ARTG', 'AUT', 'AUTDL', 'BAD', 'BADOL', 'BSBAD', 'BSBAO', 'BSCJO', 'BSCJU', 'BSEDU', 'BSESR', 'CIS', 'CIT', 'CJAAO', 'CJU', 'EDU', 'ENR', 'ENVR', 'ESR', 'FWAS', 'FWBS', 'GENA', 'GENO', 'GENOL', 'HEOC', 'HPR', 'HSS', 'IFA', 'INDL', 'PAR', 'SWK', 'SWKAS', 'WLD') THEN 'R'
 			WHEN stsd.MAJOR_1 IN ('CVO', 'CVOC', 'DC', 'NON') THEN 'N'
 		END AS gateway_math_status
-
-    FROM TmsEPrd.dbo.stud_term_sum_div stsd  
+FROM TmsEPrd.dbo.stud_term_sum_div stsd  
          LEFT JOIN TmsEPrd.dbo.name_master nm ON stsd.ID_NUM = nm.ID_NUM   
          LEFT JOIN TmsEPrd.dbo.biograph_master bm ON stsd.ID_NUM = bm.ID_NUM
          LEFT JOIN TmsEPrd.dbo.address_master am ON stsd.ID_NUM = am.ID_NUM  
          LEFT JOIN TmsEPrd.dbo.student_master sm ON stsd.ID_NUM = sm.ID_NUM
-		 LEFT JOIN DistinctCandidacy dc ON stsd.ID_NUM = dc.ID_NUM
-		LEFT JOIN TmsEPrd.dbo.ethnic_race_v ON stsd.ID_NUM=ethnic_race_v.id_num
-		LEFT JOIN PlacementValues pv ON stsd.ID_NUM=pv.ID_NUM
-   WHERE stsd.hrs_enrolled > '0' AND  am.addr_cde = '*LHP' AND stsd.YR_CDE=:YEAR AND stsd.TRM_CDE = :TERM AND
-		(CANDIDACY_TYP_DESC='Transfer Student' OR CANDIDACY_TYP_DESC='New Student')
+		 LEFT JOIN TmsEPrd.dbo.CANDIDACY c ON stsd.ID_NUM=c.ID_NUM AND stsd.YR_CDE=c.YR_CDE AND stsd.TRM_CDE=c.TRM_CDE
+		 LEFT JOIN TmsEPrd.dbo.ethnic_race_v ON stsd.ID_NUM=ethnic_race_v.id_num
+		 LEFT JOIN PlacementValues pv ON stsd.ID_NUM=pv.ID_NUM
+WHERE stsd.YR_CDE=:YEAR AND stsd.TRM_CDE = :TERM AND
+	  stsd.hrs_enrolled > '0' AND  am.addr_cde = '*LHP' AND 
+	  (c.CANDIDACY_TYPE='T' OR c.CANDIDACY_TYPE='N') AND stsd.MAJOR_1 != 'DC' --only includes new/transfer students; excludes current dual credit students
