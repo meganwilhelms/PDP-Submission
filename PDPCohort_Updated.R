@@ -5,17 +5,16 @@
 
 
 ####Packages required for this script#############################################################################################################################
-#install packages for the first time using the packages
+#install packages for the first time using the install.packages function
 install.packages('dplyr')
 install.packages('stringr')
 #loading the packages
 library(dplyr) 
 library(stringr)
 
-####STEP 1) Two files brought into R and final file created#################################################################################################
-#Files Needed:
-# 1. pdp cohort file called SLRYYYYTT - get this from Infomaker report: INST_RESEARCH/pdp/pdp_cohortfile_for_r
-# 2. gateway file needs to be continuously updated as new majors are added to school
+####STEP 1) File brought into R environment and final file created#################################################################################################
+#File Needed:
+# 1. pdp cohort file called SLRYYYYTT
 
 cohortfile <- SLR202530 %>%
   distinct(id_num, .keep_all = TRUE) %>%
@@ -65,4 +64,5 @@ writexl::write_xlsx(cohortfile,  "U:/R/PDP/PDPCohortfile202530_test.xlsx", forma
 #Instructions after: 
 #compare student IDs to master cohort list and each term to check for duplicates, remove the newest duplicates
 #after completing cohort file - 
-#Use Vlookup to fill in private info columns
+#Use Vlookup to fill in PII columns
+#Add new students to the master cohort list
