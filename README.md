@@ -7,13 +7,14 @@ The SQL files are designed to pull data from the SIS database tables and used in
 The .R files are to be used in R studio. 
 
 The process for creating the PDP cohort file includes 
-1) Runthe SQL_for_Cohort_file code in SSMS,
-2) Import the result file into R studio,
+1) Run the SQL_for_Cohort_file code in SSMS,
+2) Import the result file into R studio (I do this with the PII columns include ssn, name, and address),
 3) Run the result file in R studio,
-4) Finiale the file with any PII that needs added and header/trailer rows.
+4) Finalize the file with any PII that needs added and header/trailer rows.
+5) Add the new students to a master cohort list. The master cohort list is data file containing all students who have been submitted to the PDP. The column headers are ID, Cohort (YYYY-YY), Cohort Term. This file is added onto each time a new PDP submission occurs and is used in the course file R script to verify only students who have been submitted to the PDP have course data included in the course file submission.
 
 The process for creating the PDP course file includes
 1) Run the SQL_for_Course_File in SSMS,
-2) Import the result file into R studio plus a master cohort file. The master cohort file should contain any student IDs who have ever been submitted to PDP, their cohort year, and their cohort term.
+2) Import the result file and master cohort lsit into R studio.
 3) Run the PDP_Course_updated.R code in R studio, 
 4) Finalize the exported file with any PII and the header/trailer rows.
