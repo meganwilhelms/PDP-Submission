@@ -3,11 +3,15 @@
 #Script specific to PDP Course file
 #By: Megan Wilhelms
 
-#Two Files Needed: Master Cohort List, Student Listing Report
+#Two Files Needed: 
+# 1) Master Cohort List
+# 2) Course file pulled from SQL_for_Course_File, named courses
+
 
 ####Packages required or this script################################################################
-#install package tidyr for the first time using the package
+#install package tidyr and stringr for the first time of using the package
 install.packages('tidyr')
+install.packages('stringr')
 
 #loading the packages
 library(stringr)
@@ -16,7 +20,7 @@ library(tidyr)
 
 
 
-###STEP 1) Initial processing of the student + course file and creating of the CompleteDev courses
+###STEP 1) Initial processing of the course file and creating of the CompleteDev courses
 steponefile <- courses %>%
   mutate(course = substr(crs_cde, 1, 3),  
          coursenum = substr(crs_cde, 6, 8),
@@ -46,7 +50,7 @@ steponefile <- courses %>%
       engpass==TRUE ~ "C", 
       engfail==TRUE ~ "D", 
       .default = "NA"),
-    crs_name = case_when(
+    crs_name = case_when(                 #this crs_name step is just to fix issues of long course names being edited in the database
       crs_name=="Ochéthi Šakówin(Seven Council Fire) History and Culture"~"Ochéthi Šakówin History and Culture",
       crs_name=="Social Studies and Geography in the Elementary Classroom"~"Social Studies and Geography in the Elem Classroom",
       .default = crs_name),
@@ -58,7 +62,7 @@ steponefile <- courses %>%
          grade_cde, "course begin date", "course end date", CompleteDevMath, CompleteDevEnglish, career_gpa, trm_gpa)
 
 
-###STEP 2) PROCESSING STUDENT LISTING REPORT and joining student information with courses information
+###STEP 2) Additional processing of file, joining student course data with Master Cohort List
 #Need Master Cohort List for this section - this is so only student course information on students who exist in the cohort list are added nto the file
 steptwofile <- steponefile %>%
   mutate(  
@@ -66,8 +70,8 @@ steptwofile <- steponefile %>%
     "Academic Year" = ("2025-26"), ##########UPDATE##########################################################
     Term = case_when(
       trm_cde=="30"~"Fall", trm_cde=="40"~"Spring", trm_cde=="60"~"Summer"),
-    'Institution ID Type' = ("OPEID"),
-    'Institution ID' = (c("02242900")),
+    'Institution ID Type' = ("OPEID"),    #####################UPDATE FOR YOUR SCHOOL###########################
+    'Institution ID' = (c("02242900")),   #####################UPDATE FOR YOUR SCHOOL##########################
     career_gpa = formatC(career_gpa, digits=2, format = "f"),
     trm_gpa = formatC(trm_gpa, digits=2, format = "f"),
     credit_hrs = formatC(credit_hrs, digits=2, format = "f"),
@@ -135,3 +139,8 @@ inner_join(Master_Cohort_List[c("ID", "Cohort", "Cohort Term")], by= c("Student 
 
 ##STEP 3. Exporting the file.
 writexl::write_xlsx(steptwofile,  "U:/R/PDP/PDPCourses302025.xlsx", format_headers = FALSE )
+
+#Instructions after:
+#Use Vlookup to fill in any PII that has empty columns
+#Add header and trailer rows 
+
