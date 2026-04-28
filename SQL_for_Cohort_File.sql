@@ -1,4 +1,6 @@
- --THIS SECTION CREATES A SCORE VALUE FOR EACH TEST TYPE.
+DECLARE @YEAR char(4) = '2025'; --Change this year to the year reported on.
+DECLARE @TERM char(2) = '30'; --Change this term to the term reported on.
+--THIS SECTION CREATES A SCORE VALUE FOR EACH TEST TYPE.
 WITH SCORES AS( 
 SELECT hts.IDNumber AS ID_NUM, hts.TestElementCode, 
 	CASE
@@ -28,7 +30,7 @@ SELECT hts.IDNumber AS ID_NUM, hts.TestElementCode,
 		WHEN hts.TestElementCode='WRITX' AND hts.TestScore is null THEN 0 --TEST NOT TAKEN
 		END AS score_accup_english2
 FROM TmsEPrd.dbo.TEST_INFORMATION_V hts
-WHERE hts.TestElementCode IN ('ACTEN', 'ACTMT','ARITX','WRITX') AND :YEAR-YEAR(hts.DateTaken)<=5
+WHERE hts.TestElementCode IN ('ACTEN', 'ACTMT','ARITX','WRITX') AND @YEAR-YEAR(hts.DateTaken)<=5
 ),
 
 --THIS SECTIONS REMOVES NULLS AND JOINS THE SCORES WITH THE STUD_TERM_SUM_DIV TABLE (SO ONLY CURRENT TERM STUDENT SCORES ARE USED).
@@ -40,7 +42,7 @@ SELECT stsd.ID_NUM, stsd.TRM_CDE, stsd.YR_CDE,
 	CASE WHEN score_accup_english2 is null THEN 0 ELSE  score_accup_english2 END AS score_accup_english2
 FROM TmsEPrd.dbo.STUD_TERM_SUM_DIV stsd
 	LEFT JOIN SCORES ON stsd.ID_NUM = SCORES.ID_NUM
-WHERE stsd.HRS_ENROLLED>'0' AND stsd.YR_CDE=:YEAR AND stsd.TRM_CDE=:TERM),
+WHERE stsd.HRS_ENROLLED>'0' AND stsd.YR_CDE=@YEAR AND stsd.TRM_CDE=@TERM),
 
 --THIS SECTION IS WHERE THE SCORES ARE COMPARED AND THE HIGHER OF THE SCORES IS USED (act math vs. accuplacer math and the higher of the two used)
 CombiningScores AS(
@@ -126,6 +128,6 @@ FROM TmsEPrd.dbo.stud_term_sum_div stsd
 		 LEFT JOIN TmsEPrd.dbo.CANDIDACY c ON stsd.ID_NUM=c.ID_NUM AND stsd.YR_CDE=c.YR_CDE AND stsd.TRM_CDE=c.TRM_CDE
 		 LEFT JOIN TmsEPrd.dbo.ethnic_race_v ON stsd.ID_NUM=ethnic_race_v.id_num
 		 LEFT JOIN PlacementValues pv ON stsd.ID_NUM=pv.ID_NUM
-WHERE stsd.YR_CDE=:YEAR AND stsd.TRM_CDE = :TERM AND
+WHERE stsd.YR_CDE=@YEAR AND stsd.TRM_CDE = @TERM AND
 	  stsd.hrs_enrolled > '0' AND  am.addr_cde = '*LHP' AND 
 	  (c.CANDIDACY_TYPE='T' OR c.CANDIDACY_TYPE='N') AND stsd.MAJOR_1 != 'DC' --only includes new/transfer students; excludes current dual credit students
