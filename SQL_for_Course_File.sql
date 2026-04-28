@@ -1,9 +1,13 @@
+DECLARE @YEAR char(4) = '2025'; --Change this year to the year reported on.
+DECLARE @TERM char(2) = '30'; --Change this term to the term reported on.
+DECLARE @TermStartDate DATE = '8/26/2025'; --Change this date to the first date of the semester
+
 WITH DistinctPell AS ( 
   SELECT pfsa.ID_NUM, pffcm.FUND_DESC, pfpd.POE_DESC, pfpd.POE_START_DTE
   FROM TmsEPrd.dbo.PF_STDNT_AWARD pfsa
 		LEFT JOIN TmsEPrd.dbo.PF_FUND_CDE_MSTR pffcm ON pfsa.FUND_CDE = pffcm.FUND_CDE
 		LEFT JOIN TmsEPrd.dbo.PF_POE_DEF pfpd ON pfsa.POE_ID = pfpd.POE_ID
-  WHERE pffcm.fund_cde = '773' AND pfpd.POE_START_DTE =:Term_Start_Date
+  WHERE pffcm.fund_cde = '773' AND pfpd.POE_START_DTE =@TermStartDate
   )
 SELECT DISTINCT sch.id_num, stsd.YR_CDE, stsd.TRM_CDE, 
 		nm.FIRST_NAME, nm.MIDDLE_NAME, nm.LAST_NAME,
@@ -60,7 +64,7 @@ SELECT DISTINCT sch.id_num, stsd.YR_CDE, stsd.TRM_CDE,
 			LEFT JOIN DistinctPell dp ON stsd.ID_NUM=dp.ID_NUM,
 		TmsEPrd.dbo.REG_CONFIG rg		
 WHERE stsd.hrs_enrolled>0 AND am.ADDR_CDE='*LHP' AND
-	  stsd.YR_CDE =:YEAR AND stsd.TRM_CDE =:TERM AND 
+	  stsd.YR_CDE = @YEAR AND stsd.TRM_CDE = @TERM AND 
 		(rg.reg_config_cde = '1' AND  
 		sch.transaction_sts in ('C', 'H', 'P', 'R', 'W') AND 
 				(((sm.hold_1_cde is NULL OR sm.hold_1_cde = '') AND (sm.hold_2_cde is NULL OR sm.hold_2_cde = '') AND (sm.hold_3_cde is NULL OR sm.hold_3_cde = '') AND  
